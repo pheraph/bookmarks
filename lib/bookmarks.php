@@ -316,7 +316,7 @@ class OC_Bookmarks_Bookmarks{
 	 * @param boolean $is_public True if the bookmark is publishable to not registered users
 	 * @return int The id of the bookmark created
 	 */
-	public static function addBookmark($url, $title, $tags=array(), $description='', $is_public=false) {
+	public static function addBookmark($url, $title, $tags=array(), $description='', $date, $is_public=false) {
 		$is_public = $is_public ? 1 : 0;
 		$enc_url = htmlspecialchars_decode($url);
 		$_ut = self::getNowValue();
@@ -346,7 +346,7 @@ class OC_Bookmarks_Bookmarks{
 		$query = OCP\DB::prepare("
 			INSERT INTO `*PREFIX*bookmarks`
 			(`url`, `title`, `user_id`, `public`, `added`, `lastmodified`, `description`)
-			VALUES (?, ?, ?, ?, $_ut, $_ut, ?)
+			VALUES (?, ?, ?, ?, ?, $_ut, ?)
 			");
 
 		$params=array(
@@ -354,6 +354,7 @@ class OC_Bookmarks_Bookmarks{
 			htmlspecialchars_decode($title),
 			OCP\USER::getUser(),
 			$is_public,
+			$date,
 			$description,
 		);
 		$query->execute($params);
@@ -417,7 +418,16 @@ class OC_Bookmarks_Bookmarks{
 			if($link->hasAttribute("description"))
 				$desc_str = $link->getAttribute("description");
 
-			self::addBookmark($ref, $title, $tags,$desc_str );
+			if($link->hasAttribute("add_date"))
+				$date = $link->getAttribute("add_date");
+
+			$public = false;
+			if($link->hasAttribute("private")){
+				$private = $link->getAttribute("private");
+				$public = $private ? false : true;
+			}
+
+			self::addBookmark($ref, $title, $tags, $desc_str, $date, $public);
 		}
 		OCP\DB::commit();
 		return array();
